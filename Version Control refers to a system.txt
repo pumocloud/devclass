@@ -1,0 +1,1 @@
+Version Control refers to a system that records changes to a file or set of files over time, called the ‘versions’. In other words, these versions help you in tracking the changes in your codes/project and if necessary, undo those changes as well.
