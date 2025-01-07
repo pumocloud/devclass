@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to create an EC2 instance, S3 bucket, and an additional 10GB volume.
+
+Parameters:
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+
+Resources:
+  # Create an S3 bucket
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: pumo-s3-ec2
+      AccessControl: Private
+
+  # Security group for EC2 instance
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH and HTTP access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  # Create an EBS volume
+  EBSVolume:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 10
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      Tags:
+        - Key: Name
+          Value: pumocloud-volume
+
+  # Create an EC2 instance
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: "your-key-pair-name" # Replace with your key pair name
+      SecurityGroups:
+        - !Ref InstanceSecurityGroup
+      ImageId: ami-0c02fb55956c7d316 # Replace with a valid AMI ID for your region
+      Tags:
+        - Key: Name
+          Value: pumocloud
+
+  # Attach the EBS volume to the EC2 instance
+  VolumeAttachment:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      InstanceId: !Ref EC2Instance
+      VolumeId: !Ref EBSVolume
+      Device: /dev/xvdf
+
+Outputs:
+  S3BucketName:
+    Description: Name of the S3 bucket
+    Value: !Ref S3Bucket
+
+  InstanceId:
+    Description: ID of the created EC2 instance
+    Value: !Ref EC2Instance
+
+  VolumeId:
+    Description: ID of the attached EBS volume
+    Value: !Ref EBSVolume
